@@ -4,19 +4,20 @@ import imageio
 import numpy as np
 from io import BytesIO
 from scipy import ndimage
+import cv2
 
 # ページ設定
-st.set_page_config(page_title="RAW画像 高度カスタマイズ可能プリセット変換アプリ", layout="wide")
+st.set_page_config(page_title="RAW画像 カテゴリ別カスタマイズ変換アプリ", layout="wide")
 
 # アプリのタイトルと制作者
-st.title("RAW画像 高度カスタマイズ可能プリセット変換アプリ")
+st.title("RAW画像 カテゴリ別カスタマイズ変換アプリ")
 st.caption("Created by Dit-Lab.(Daiki Ito)")
 
 # 概要
 st.markdown("""
 ## **概要**
-このウェブアプリケーションでは、RAW画像に高度にカスタマイズ可能なプリセットを適用し、JPG形式でダウンロードすることができます。
-RAW画像の特性を考慮した調整が可能です。
+このウェブアプリケーションでは、RAW画像にカテゴリ別にカスタマイズ可能なプリセットを適用し、JPG形式でダウンロードすることができます。
+初心者の方でも簡単に使えるよう、パラメータがカテゴリごとに整理されています。
 """)
 
 # ファイルアップローダー
@@ -26,27 +27,49 @@ if uploaded_file is not None:
     # プリセットの選択
     preset = st.selectbox(
         "プリセットを選択してください",
-        ("サマー", "カスタム", "ビビッド", "モノクロ")
+        ("カスタム", "サマー", "ビビッド", "モノクロ")
     )
-    
-    # パラメータ設定
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        exposure = st.slider("露出補正", -2.0, 2.0, 0.0, 0.1)
-        brightness = st.slider("明るさ", 0.5, 2.0, 1.3, 0.05)
-        contrast = st.slider("コントラスト", 0.5, 2.0, 0.8, 0.05)
-        highlights = st.slider("ハイライト", -1.0, 1.0, 0.0, 0.05)
-    with col2:
-        shadows = st.slider("シャドウ", -1.0, 1.0, 0.0, 0.05)
-        whites = st.slider("白レベル", -1.0, 1.0, 0.0, 0.05)
-        blacks = st.slider("黒レベル", -1.0, 1.0, 0.0, 0.05)
-        saturation = st.slider("彩度", 0.0, 2.0, 0.9, 0.05)
-    with col3:
-        warmth = st.slider("色温度", 0.5, 1.5, 0.85, 0.025)
-        tint = st.slider("色合い", -1.0, 1.0, 0.0, 0.05)
-        clarity = st.slider("クラリティ", -1.0, 1.0, 0.0, 0.05)
-        vignette = st.slider("ビネット", 0.0, 1.0, 0.0, 0.05)
-    
+
+    # パラメータをカテゴリごとにまとめる
+    with st.expander("基本設定", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            exposure = st.slider("露出補正", -2.0, 2.0, 0.0, 0.1, 
+                                 help="画像全体の明るさを調整します。正の値で明るく、負の値で暗くなります。")
+            brightness = st.slider("明るさ", 0.5, 2.0, 1.0, 0.05, 
+                                   help="画像の全体的な明るさを微調整します。")
+        with col2:
+            contrast = st.slider("コントラスト", 0.5, 2.0, 1.0, 0.05, 
+                                 help="画像の明暗の差を調整します。高いほど明暗の差が大きくなります。")
+            saturation = st.slider("彩度", 0.0, 2.0, 1.0, 0.05, 
+                                   help="色の鮮やかさを調整します。0で白黒、2で非常に鮮やかになります。")
+
+    with st.expander("色調整"):
+        col1, col2 = st.columns(2)
+        with col1:
+            warmth = st.slider("色温度", 0.5, 1.5, 1.0, 0.025, 
+                               help="画像の全体的な色味を調整します。低いほど青っぽく、高いほど赤っぽくなります。")
+            tint = st.slider("色合い", -1.0, 1.0, 0.0, 0.05, 
+                             help="緑と紫の色味のバランスを調整します。正の値で緑っぽく、負の値で紫っぽくなります。")
+        with col2:
+            highlights = st.slider("ハイライト", -1.0, 1.0, 0.0, 0.05, 
+                                   help="明るい部分の明るさを調整します。")
+            shadows = st.slider("シャドウ", -1.0, 1.0, 0.0, 0.05, 
+                                help="暗い部分の明るさを調整します。")
+
+    with st.expander("詳細設定"):
+        col1, col2 = st.columns(2)
+        with col1:
+            whites = st.slider("白レベル", -1.0, 1.0, 0.0, 0.05, 
+                               help="画像内の白色部分の明るさを調整します。")
+            blacks = st.slider("黒レベル", -1.0, 1.0, 0.0, 0.05, 
+                               help="画像内の黒色部分の暗さを調整します。")
+        with col2:
+            clarity = st.slider("クラリティ", -1.0, 1.0, 0.0, 0.05, 
+                                help="画像のディテールとテクスチャを強調します。")
+            vignette = st.slider("ビネット", 0.0, 1.0, 0.0, 0.05, 
+                                 help="画像の周辺部を暗くする効果を追加します。")
+
     # プリセットに基づいてパラメータを設定
     if preset == "サマー":
         exposure, brightness, contrast = 0.5, 1.3, 0.8
@@ -61,7 +84,7 @@ if uploaded_file is not None:
     elif preset == "モノクロ":
         saturation = 0.0
         contrast, clarity = 1.3, 0.3
-    
+
     # スピナーを使用して処理中であることを表示
     with st.spinner('RAW画像を処理中です。しばらくお待ちください...'):
         # RAW画像の処理
