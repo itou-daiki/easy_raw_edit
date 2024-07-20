@@ -1,31 +1,65 @@
-# Streamlitライブラリをインポート
 import streamlit as st
+import rawpy
+import imageio
+import numpy as np
+from io import BytesIO
 
-# ページ設定（タブに表示されるタイトル、表示幅）
-st.set_page_config(page_title="タイトル", layout="wide")
+# ページ設定
+st.set_page_config(page_title="RAW画像 サマープリセット変換アプリ", layout="wide")
 
-# タイトルを設定
-st.title('Streamlitのサンプルアプリ')
+# アプリのタイトルと制作者
+st.title("RAW画像 サマープリセット変換アプリ")
+st.caption("Created by Dit-Lab.(Daiki Ito)")
 
-# テキスト入力ボックスを作成し、ユーザーからの入力を受け取る
-user_input = st.text_input('あなたの名前を入力してください')
+# 概要
+st.markdown("""
+## **概要**
+このウェブアプリケーションでは、RAW画像にサマーカラープリセットを適用し、JPG形式でダウンロードすることができます。
+iPadなどのデバイスでも対応しています。
+""")
 
-# ボタンを作成し、クリックされたらメッセージを表示
-if st.button('挨拶する'):
-    if user_input:  # 名前が入力されているかチェック
-        st.success(f'🌟 こんにちは、{user_input}さん! 🌟')  # メッセージをハイライト
-    else:
-        st.error('名前を入力してください。')  # エラーメッセージを表示
+# ファイルアップローダー
+uploaded_file = st.file_uploader("RAW画像をアップロードしてください", type=["raw", "arw", "cr2", "nef"])
 
-# スライダーを作成し、値を選択
-number = st.slider('好きな数字（10進数）を選んでください', 0, 100)
+if uploaded_file is not None:
+    st.write("処理中...")
+    
+    # RAW画像の処理
+    with rawpy.imread(uploaded_file) as raw:
+        rgb = raw.postprocess()
+    
+    # 0-1の範囲に正規化
+    rgb = rgb.astype(np.float32) / 255.0
+    
+    # サマーカラープリセットの適用
+    brightness = 1.2
+    warmth = 1.1
+    
+    rgb = rgb * brightness
+    rgb[:,:,0] = rgb[:,:,0] * warmth  # 赤チャンネルを強調
+    rgb[:,:,2] = rgb[:,:,2] / warmth  # 青チャンネルを抑制
+    
+    # 値を0-1の範囲に収める
+    processed = np.clip(rgb, 0, 1)
+    
+    # 0-255の範囲に戻す
+    processed = (processed * 255).astype(np.uint8)
+    
+    # 処理後の画像を表示
+    st.image(processed, caption='処理後の画像', use_column_width=True)
+    
+    # JPG形式でダウンロード
+    buf = BytesIO()
+    imageio.imwrite(buf, processed, format='jpg')
+    btn = st.download_button(
+        label="JPGとしてダウンロード",
+        data=buf.getvalue(),
+        file_name="processed_image.jpg",
+        mime="image/jpeg"
+    )
 
-# 補足メッセージ
-st.caption("十字キー（左右）でも調整できます。")
+st.write("注意: このアプリはRAW画像の処理に時間がかかる場合があります。")
 
-# 選択した数字を表示
-st.write(f'あなたが選んだ数字は「{number}」です。')
-
-# 選択した数値を2進数に変換
-binary_representation = bin(number)[2:]  # 'bin'関数で2進数に変換し、先頭の'0b'を取り除く
-st.info(f'🔢 10進数の「{number}」を2進数で表現すると「{binary_representation}」になります。 🔢')  # 2進数の表示をハイライト
+# Copyright
+st.write("")
+st.subheader('© 2022-2024 Dit-Lab.(Daiki Ito). All Rights Reserved.')
