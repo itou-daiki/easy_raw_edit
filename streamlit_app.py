@@ -51,46 +51,46 @@ if uploaded_file is not None:
         saturation = 0.0
         contrast = 1.3
     
-    st.write("処理中...")
-    
-    # RAW画像の処理
-    with rawpy.imread(uploaded_file) as raw:
-        rgb = raw.postprocess()
-    
-    # 0-1の範囲に正規化
-    image = rgb.astype(np.float32) / 255.0
-    
-    # 明るさ調整
-    image = image * brightness
-    
-    # コントラスト調整
-    image = (image - 0.5) * contrast + 0.5
-    
-    # 彩度調整
-    gray = np.dot(image[..., :3], [0.2989, 0.5870, 0.1140])
-    image[..., :3] = np.clip(image[..., :3] + (image[..., :3] - gray[..., None]) * (saturation - 1), 0, 1)
-    
-    # 色温度調整（warmth）
-    image[..., 2] = np.clip(image[..., 2] * (2 - warmth), 0, 1)  # 青チャンネルを調整
-    image[..., 0] = np.clip(image[..., 0] * warmth, 0, 1)  # 赤チャンネルを調整
-    
-    # ハイライトの強調
-    highlight_threshold = 0.7
-    highlights = np.where(image > highlight_threshold, image, 0)
-    image = np.clip(image + highlights * highlight, 0, 1)
-    
-    # ぼかし効果
-    if blur > 0:
-        image = ndimage.gaussian_filter(image, sigma=blur)
-    
-    # 青みの強調
-    image[..., 2] = np.clip(image[..., 2] * 1.1, 0, 1)
-    
-    # 最終的なクリッピング
-    processed = np.clip(image, 0, 1)
-    
-    # 0-255の範囲に戻す
-    processed = (processed * 255).astype(np.uint8)
+    # スピナーを使用して処理中であることを表示
+    with st.spinner('画像を処理中です。しばらくお待ちください...'):
+        # RAW画像の処理
+        with rawpy.imread(uploaded_file) as raw:
+            rgb = raw.postprocess()
+        
+        # 0-1の範囲に正規化
+        image = rgb.astype(np.float32) / 255.0
+        
+        # 明るさ調整
+        image = image * brightness
+        
+        # コントラスト調整
+        image = (image - 0.5) * contrast + 0.5
+        
+        # 彩度調整
+        gray = np.dot(image[..., :3], [0.2989, 0.5870, 0.1140])
+        image[..., :3] = np.clip(image[..., :3] + (image[..., :3] - gray[..., None]) * (saturation - 1), 0, 1)
+        
+        # 色温度調整（warmth）
+        image[..., 2] = np.clip(image[..., 2] * (2 - warmth), 0, 1)  # 青チャンネルを調整
+        image[..., 0] = np.clip(image[..., 0] * warmth, 0, 1)  # 赤チャンネルを調整
+        
+        # ハイライトの強調
+        highlight_threshold = 0.7
+        highlights = np.where(image > highlight_threshold, image, 0)
+        image = np.clip(image + highlights * highlight, 0, 1)
+        
+        # ぼかし効果
+        if blur > 0:
+            image = ndimage.gaussian_filter(image, sigma=blur)
+        
+        # 青みの強調
+        image[..., 2] = np.clip(image[..., 2] * 1.1, 0, 1)
+        
+        # 最終的なクリッピング
+        processed = np.clip(image, 0, 1)
+        
+        # 0-255の範囲に戻す
+        processed = (processed * 255).astype(np.uint8)
     
     # 処理後の画像を表示
     st.image(processed, caption='処理後の画像', use_column_width=True)
