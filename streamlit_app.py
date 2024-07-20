@@ -26,24 +26,24 @@ if uploaded_file is not None:
     # プリセットの選択
     preset = st.selectbox(
         "プリセットを選択してください",
-        ("カスタム", "サマー", "ビビッド", "モノクロ")
+        ("サマー", "カスタム", "ビビッド", "モノクロ")
     )
     
     # パラメータ設定
     col1, col2 = st.columns(2)
     with col1:
-        brightness = st.slider("明るさ", 0.5, 2.0, 1.0, 0.1)
-        contrast = st.slider("コントラスト", 0.5, 2.0, 1.0, 0.1)
-        saturation = st.slider("彩度", 0.0, 2.0, 1.0, 0.1)
+        brightness = st.slider("明るさ", 0.5, 2.0, 1.25, 0.05)
+        contrast = st.slider("コントラスト", 0.5, 2.0, 0.85, 0.05)
+        saturation = st.slider("彩度", 0.0, 2.0, 0.95, 0.05)
     with col2:
-        warmth = st.slider("色温度", 0.5, 1.5, 1.0, 0.1)
-        highlight = st.slider("ハイライト", 0.0, 0.5, 0.1, 0.05)
-        blur = st.slider("ぼかし", 0.0, 2.0, 0.0, 0.1)
+        warmth = st.slider("色温度", 0.5, 1.5, 0.925, 0.025)
+        highlight = st.slider("ハイライト", 0.0, 0.5, 0.15, 0.05)
+        blur = st.slider("ぼかし", 0.0, 2.0, 0.75, 0.25)
     
     # プリセットに基づいてパラメータを設定
     if preset == "サマー":
-        brightness, contrast, saturation = 1.2, 1.2, 1.1
-        warmth, highlight, blur = 0.9, 0.2, 0.5
+        brightness, contrast, saturation = 1.25, 0.85, 0.95
+        warmth, highlight, blur = 0.925, 0.15, 0.75
     elif preset == "ビビッド":
         brightness, contrast, saturation = 1.1, 1.3, 1.5
         warmth, highlight, blur = 1.1, 0.3, 0.0
